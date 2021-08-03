@@ -28,18 +28,17 @@ export const paramterValuesMapping = (node_array, edges_array) => {
     }
   }
 
-  let z = 0;
   for (let i = 0; i < node_array.length; i++) {
     if (node_array[i]["$"]["xmi:type"] === "uml:OpaqueAction") {
       //check in edge_map
-      if (edge_map.has(node_array[i]["$"]["xmi:id"]) && z === 0) {
+      if (edge_map.has(node_array[i]["$"]["xmi:id"])) {
         edge_map
           .get(node_array[i]["$"]["xmi:id"])
           .push(node_array[i]["$"].name);
       }
 
       //check in guard map
-      if (guard_map.has(node_array[i]["$"]["xmi:id"]) && z === 0) {
+      if (guard_map.has(node_array[i]["$"]["xmi:id"])) {
         guard_map
           .get(node_array[i]["$"]["xmi:id"])
           .push(node_array[i]["$"].name);
@@ -80,24 +79,6 @@ export const paramterValuesMapping = (node_array, edges_array) => {
         }
         i--;
       }
-
-      //infeasible condition
-      // if (node_array[i]["$"].name === "Select%20Concession%20Rules") {
-      //   z = 0;
-      // }
-
-      // if (z === 1) {
-      //   Infeasible_map.set(node_array[i]["$"]["xmi:id"], [
-      //     node_array[i]["$"].name,
-      //     "Infeasible%20Input",
-      //   ]);
-      //   if (edge_map.has(node_array[i]["$"]["xmi:id"]))
-      //     edge_map.delete(node_array[i]["$"]["xmi:id"]);
-      // }
-
-      // if (node_array[i]["$"].name === "Select%20Infeasible%20Concession") {
-      //   z = 1;
-      // }
     }
   }
 
@@ -147,6 +128,13 @@ export const paramterValuesMapping = (node_array, edges_array) => {
     final.set(key, value);
   });
 
+  //Maximum Concession add to last
+  let max_conc = guard_map.entries().next();
+  if (max_conc.value[1][0] === "Maximum%20Concession") {
+    guard_map.delete(max_conc.value[0]);
+    guard_map.set(max_conc.value[0], max_conc.value[1]);
+  }
+
   //merge guard_map
   guard_map.forEach((value, key) => {
     let condition = value[0];
@@ -172,21 +160,22 @@ export const paramterValuesMapping = (node_array, edges_array) => {
       let split_value = value[0].split("= ");
       value[0] = split_value[1];
     } else if (value[0].includes("> ")) {
-      value[0] = value[0].replace("> ", "types selected more than ");
+      value[0] = "If " + value[0].replace("> ", "types selected more than ");
     } else if (value[0].includes("< ")) {
-      value[0] = value[0].replace("< ", "types selected less than ");
+      value[0] = "If " + value[0].replace("< ", "types selected less than ");
     }
     final.set(key, value);
   });
 
   console.log("final", final);
 
+  //parsing final map
   final.forEach(function (value, key) {
     value[1] = value[1].replace(/%20/g, " ");
     value[1] = value[1].replace(/%25/g, "%");
     let string = value[1];
 
-    if (string.includes("Select")) {
+    if (string.includes("Select") || string.includes("or")) {
       let split_string = string
         .split("Select ")
         .join("")
